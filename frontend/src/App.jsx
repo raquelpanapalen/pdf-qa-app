@@ -1,6 +1,160 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { Upload, MessageCircle, FileText, Loader2, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
+// Upload Component
+const FileUploadCard = ({ file, setFile, uploading, uploaded, onUpload, error }) => {
+    return (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-blue-100 rounded-xl">
+                    <Upload className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Upload Your PDF</h2>
+            </div>
+
+            <div className="space-y-4">
+                <div className="relative">
+                    <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e) => {
+                            setFile(e.target.files[0]);
+                        }}
+                        className="w-full p-4 border-2 border-dashed border-blue-300 rounded-xl bg-white/80 backdrop-blur-sm hover:border-blue-400 transition-colors cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    {uploaded && (
+                        <div className="absolute top-2 right-2">
+                            <CheckCircle className="w-6 h-6 text-green-500" />
+                        </div>
+                    )}
+                </div>
+
+                {file && (
+                    <div className="flex items-center gap-2 p-3 bg-white/80 rounded-lg">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <span className="text-sm text-gray-700 font-medium">{file.name}</span>
+                    </div>
+                )}
+
+                <button
+                    onClick={onUpload}
+                    disabled={!file || uploading}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                    {uploading ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Processing...
+                        </>
+                    ) : (
+                        <>
+                            <Upload className="w-5 h-5" />
+                            Upload PDF
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Question Component
+const QuestionCard = ({ prompt, setPrompt, onAsk, loading, uploaded, disabled }) => {
+    return (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-green-100 rounded-xl">
+                    <MessageCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">Ask Your Question</h2>
+            </div>
+
+            <div className="space-y-4">
+                <textarea
+                    placeholder="What would you like to know about your document? Be specific for better results..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    className="w-full p-4 border border-green-200 rounded-xl bg-white/80 backdrop-blur-sm focus:border-green-400 focus:ring-2 focus:ring-green-200 transition-all duration-200 resize-none"
+                    rows={4}
+                />
+
+                <button
+                    onClick={onAsk}
+                    disabled={disabled || !prompt || loading}
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Analyzing...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles className="w-5 h-5" />
+                            Get Answer
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// Answer Component
+const AnswerCard = ({ answer }) => {
+    if (!answer) return null;
+
+    return (
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100 shadow-lg animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-purple-100 rounded-xl">
+                    <Sparkles className="w-6 h-6 text-purple-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-800">AI Response</h2>
+            </div>
+
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl p-5 border border-purple-200">
+                <p className="text-gray-800 leading-relaxed whitespace-pre-line">{answer}</p>
+            </div>
+        </div>
+    );
+};
+
+// Error Component
+const ErrorAlert = ({ error }) => {
+    if (!error) return null;
+
+    return (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-red-700 font-medium">{error}</p>
+        </div>
+    );
+};
+
+// Status Indicator
+const StatusIndicator = ({ uploaded, file }) => {
+    return (
+        <div className="flex items-center justify-center gap-4 mb-6">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${file ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                <div className={`w-2 h-2 rounded-full ${file ? 'bg-blue-500' : 'bg-gray-400'}`} />
+                <span className="text-sm font-medium">File Selected</span>
+            </div>
+
+            <div className="w-8 h-0.5 bg-gray-300 rounded" />
+
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${uploaded ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                }`}>
+                <div className={`w-2 h-2 rounded-full ${uploaded ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <span className="text-sm font-medium">Ready to Ask</span>
+            </div>
+        </div>
+    );
+};
+
+// Main App Component
 function App() {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -10,6 +164,14 @@ function App() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    const handleFileChange = (newFile) => {
+        setFile(newFile);
+        setUploaded(false);
+        setAnswer('');
+        setPrompt('');
+        setError('');
+    };
+
     const handleUpload = async () => {
         if (!file) return;
         setUploading(true);
@@ -17,13 +179,21 @@ function App() {
         const formData = new FormData();
         formData.append('file', file);
 
+        // Check if the file is a PDF (by MIME type or extension)
+        const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+        if (!isPDF) {
+            setError('Only PDF files are allowed.');
+            setFile(null);
+            setUploading(false);
+            return;
+        }
+
         try {
             const res = await axios.post('http://localhost:5001/upload', formData, { withCredentials: true });
             setUploaded(true);
-            console.log("Upload session ID:", res.data.session_id);
         } catch (err) {
             console.error(err);
-            setError(err.response?.data?.message || 'Error uploading file. Please try again.');
+            setError(err.response?.data?.error || 'Error uploading file. Please try again.');
         } finally {
             setUploading(false);
         }
@@ -34,18 +204,19 @@ function App() {
         setLoading(true);
         setError('');
         setAnswer('');
+
         if (!uploaded) {
             setError('Please upload a PDF file first.');
             setLoading(false);
             return;
         }
+
         try {
             const res = await axios.post('http://localhost:5001/ask', { prompt }, { withCredentials: true });
             setAnswer(res.data.answer);
-            console.log("Ask session ID:", res.data.session_id);
         } catch (err) {
             // Print response error to console for debugging (from payload)
-            console.error(err.response?.data?.error);
+            console.error(err);
             setError(err.response?.data?.error);
         } finally {
             setLoading(false);
@@ -53,60 +224,49 @@ function App() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 p-8">
-            <div className="max-w-2xl mx-auto bg-white shadow-xl rounded-xl p-6">
-                <h1 className="text-3xl font-bold text-center mb-6 text-blue-700">📄 PDF Q&A Assistant</h1>
-
-                <div className="mb-4">
-                    <label className="block font-medium mb-1">Upload PDF</label>
-                    <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => {
-                            setFile(e.target.files[0]);
-                            setUploaded(false);
-                            setAnswer('');
-                            setPrompt('');
-                        }}
-                        className="w-full p-2 border rounded"
-                    />
-                    <button
-                        onClick={handleUpload}
-                        disabled={!file || uploading}
-                        className="mt-2 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
-                    >
-                        {uploading ? 'Uploading...' : 'Upload PDF'}
-                    </button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 md:p-8">
+            <div className="max-w-4xl mx-auto">
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+                        🎥 SceneScanner
+                    </h1>
+                    <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                        Upload your PDF document and ask questions to get instant, AI-powered answers
+                    </p>
                 </div>
 
-                <div className="mb-4">
-                    <label className="block font-medium mb-1">Ask a question</label>
-                    <textarea
-                        placeholder="What would you like to know?"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        className="w-full p-3 border rounded"
-                        rows={3}
-                    />
-                    <button
-                        onClick={handleAsk}
-                        disabled={!uploaded || !prompt || loading}
-                        className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                    >
-                        {loading ? 'Thinking...' : 'Ask'}
-                    </button>
+                {/* Status Indicator */}
+                <StatusIndicator uploaded={uploaded} file={file} />
+
+                {/* Error Alert */}
+                <div className="mb-6">
+                    <ErrorAlert error={error} />
                 </div>
 
-                {answer && (
-                    <div className="bg-green-100 p-4 rounded mb-2">
-                        <h2 className="font-semibold text-green-700">Answer:</h2>
-                        <p className="mt-1 text-gray-800 whitespace-pre-line">{answer}</p>
-                    </div>
-                )}
+                {/* Main Content */}
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <FileUploadCard
+                        file={file}
+                        setFile={handleFileChange}
+                        uploading={uploading}
+                        uploaded={uploaded}
+                        onUpload={handleUpload}
+                        error={error}
+                    />
 
-                {error && (
-                    <div className="bg-red-100 p-3 rounded text-red-700 font-medium">{error}</div>
-                )}
+                    <QuestionCard
+                        prompt={prompt}
+                        setPrompt={setPrompt}
+                        onAsk={handleAsk}
+                        loading={loading}
+                        uploaded={uploaded}
+                        disabled={!uploaded}
+                    />
+                </div>
+
+                {/* Answer Section */}
+                <AnswerCard answer={answer} />
             </div>
         </div>
     );
