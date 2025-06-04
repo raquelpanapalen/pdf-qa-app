@@ -6,5 +6,6 @@ Flask-Session
 faiss-cpu
 langchain==0.3.25
 langchain-community
+langchain-openai
 huggingface-hub==0.31.1
 langchain-huggingface==0.2.0

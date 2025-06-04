@@ -9,14 +9,14 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaLLM, OllamaEmbeddings
-
+from langchain_openai import OpenAIEmbeddings, OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from dotenv import load_dotenv
 
 
 load_dotenv()
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = os.getenv("SECRET_KEY", str(uuid4()))
 
 app.config["SESSION_PERMANENT"] = False  # Sessions expire when the browser is closed
 app.config["SESSION_TYPE"] = "filesystem"
@@ -65,7 +65,16 @@ def upload():
     if not texts:
         return jsonify({"error": "No text found after splitting"}), 400
 
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    # Create embeddings based on the model specified in request
+    model = request.form.get("model", "ollama")
+
+    if model == "openai":
+        embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
+    elif model == "ollama":
+        embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    else:
+        return jsonify({"error": "Unsupported model specified"}), 400
+
     vector_store = FAISS.from_documents(texts, embeddings)
 
     session_id = session["session_id"]
@@ -86,6 +95,7 @@ def upload():
 @app.route("/ask", methods=["POST"])
 def ask():
     prompt = request.json.get("prompt")
+    model = request.json.get("selectedModel", "ollama")
     if not prompt:
         return jsonify({"error": "No prompt provided"}), 400
 
@@ -97,12 +107,25 @@ def ask():
     if not os.path.exists(vector_path):
         return jsonify({"error": "No uploaded file for this session"}), 400
 
-    vector_store = FAISS.load_local(
-        vector_path,
-        OllamaEmbeddings(model="nomic-embed-text"),
-        allow_dangerous_deserialization=True,
-    )
-    llm = OllamaLLM(model="qwen2.5:latest")
+    # Load the vector store
+    if model == "openai":
+        vector_store = FAISS.load_local(
+            vector_path,
+            OpenAIEmbeddings(model="text-embedding-3-large"),
+            allow_dangerous_deserialization=True,
+        )
+        llm = OpenAI(model="gpt-4o-mini")
+    elif model == "ollama":
+        vector_store = FAISS.load_local(
+            vector_path,
+            OllamaEmbeddings(model="nomic-embed-text"),
+            allow_dangerous_deserialization=True,
+        )
+        llm = OllamaLLM(model="qwen2.5:latest")
+    else:
+        return jsonify({"error": "Unsupported model specified"}), 400
+
+    # Load the QA chain
     chain = load_qa_chain(llm=llm, chain_type="stuff")
     docs = vector_store.similarity_search(prompt)
     result = chain.invoke({"input_documents": docs, "question": prompt})
