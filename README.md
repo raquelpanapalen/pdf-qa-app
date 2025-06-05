@@ -84,14 +84,28 @@ project-root/
 │
 ├── backend/
 │   ├── app.py             # Flask backend
-│   ├── requirements.txt   # Python dependencies
+│   └── requirements.txt   # Python dependencies
 │
 ├── frontend/
 │   ├── src/
-│   │   └── App.jsx        # React UI
-│   └── package.json       # React dependencies
+│   │   ├── components/
+│   │   │   ├── ModelSelector.jsx      # AI model selection dropdown
+│   │   │   ├── FileUploadCard.jsx     # PDF file upload component
+│   │   │   ├── QuestionCard.jsx       # Question input and submission
+│   │   │   ├── AnswerCard.jsx         # AI response display
+│   │   │   ├── ErrorAlert.jsx         # Error message component
+│   │   │   └── StatusIndicator.jsx    # Upload progress indicator
+│   │   ├── utils/
+│   │   │   └── api.js                 # API service functions
+│   │   ├── App.jsx                    # Main React application
+│   │   └── index.js                   # React entry point
+│   ├── public/
+│   │   └── index.html                 # HTML template
+│   ├── package.json                   # React dependencies
+│   └── package-lock.json              # Lock file for dependencies
 │
-└── README.md              # This file
+├── .gitignore                         # Git ignore file
+└── README.md                          # Project documentation
 ```
 
 ---
