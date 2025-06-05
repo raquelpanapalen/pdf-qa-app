@@ -54,7 +54,7 @@ SceneScanner is a full-stack application that lets you upload movie-related PDF 
 
         `OPENAI_API_KEY="your-api-key-here"`
 
-        Replace the value with your actual OpenAI API key.
+        Replace the value with your actual OpenAI API key. This API key will be automatically loaded to the environment using `dotenv`.
 
         - `gpt-4o-mini` will be used as the LLM for generating replies.
         - `text-embedding-3-large` will be used to create the embeddings for the vector database.
@@ -101,29 +101,33 @@ project-root/
 ### i. Overall Architecture
 - Frontend (React) lets users upload a PDF and submit questions.
 - Backend (Flask) handles PDF processing, vector storage, and LLM-based answering.
-- FAISS stores vector representations of document chunks.
-- Ollama runs a local LLM (e.g. Qwen2.5) for efficient inference.
+- FAISS is used for efficient storage and retrieval of vector representations (embeddings) of document chunks. This allows for fast similarity searches to find relevant sections of the PDF.
+- Language Models (LLMs) are used for question answering given top-k relevant documents as context. 
 
 ### ii. Frontend ↔ Backend Interaction
-- `/upload`: React sends the selected PDF using a `POST` request with `FormData`.
-- Flask reads and splits the PDF into chunks, generates embeddings, and saves them to disk using FAISS.
-- A session cookie is used to associate users with their FAISS vector store.
-- `/ask`: React sends a natural language question using a `POST` request.
-- Flask loads the relevant vector store, retrieves top-k matching chunks, and sends the context to the LLM.
+The frontend and backend communicate through a set of well-defined API endpoints.
 
-### iii. Backend ↔ Ollama and PDF Handling
-- PDF Handling: `PyMuPDF` is used via LangChain's `PyMuPDFLoader` to read and chunk the PDF text.
-- Embeddings: `OllamaEmbeddings` generates vector representations of text.
-- Similarity Search: FAISS performs fast similarity lookups for relevant chunks.
-- LLM Prompting: LangChain passes retrieved context and user question to an Ollama-powered model.
-- Answering: The LLM returns an answer, which is sent back to the frontend.
+- **`/upload` (`POST` Request):**
+    - The React frontend sends the selected PDF file to this endpoint using a FormData object.
+    - The Flask backend receives the PDF, reads and splits its content into manageable chunks using LangChain's `PyMuPDFLoader`.
+    - It then generates vector embeddings for these chunks using either `OpenAIEmbeddings` or `OllamaEmbeddings`, depending on the user's model selection.
+    - These embeddings are then saved to disk using FAISS, creating a dedicated vector store for the uploaded document.
+    - A unique session cookie is used to associate the user with their specific FAISS vector store, ensuring continuity across their interaction.
+
+- **`/ask` (`POST` Request):**
+    - The React frontend sends the user's natural language question to this endpoint.
+    - The Flask backend identifies the correct session and loads the corresponding FAISS vector store.
+    - It performs a similarity search to retrieve the top-k most relevant document chunks based on the user's question.
+    - This retrieved context, along with the user's question, is then sent to the selected LLM (either OpenAI or Ollama-powered).
+    - The selected LLM processes the input and returns a comprehensive answer, which is then sent back to the frontend for display to the user.
+
 
 ### Why LangChain
 LangChain offers smooth integration of vector databases, language models, and question-answering chains—ideal for building RAG pipelines.
 
-In our case, we did not have access to OpenAI API credentials, so we opted to use local models instead. While attempting to use Hugging Face embeddings, we encountered several compatibility issues stemming from recent API changes—LangChain's current version has deprecation problems and is not fully up to date with the latest Hugging Face methods.
+If OpenAI credentials are available, LangChain allows for straightforward integration. By simply providing an API key, the framework can automatically handle connections to OpenAI's services, including both OpenAIEmbeddings and OpenAI LLMs, making setup and deployment significantly smoother.
 
-If OpenAI credentials were available, LangChain would have allowed for straightforward integration. By simply providing an API key, the framework can automatically handle connections to OpenAI's services, including both OpenAIEmbeddings and OpenAI LLMs, making setup and deployment significantly smoother.
+Additionally, free open-source models can be used locally instead. While attempting to use Hugging Face embeddings, we encountered several compatibility issues stemming from recent API changes—LangChain's current version has deprecation problems and is not fully up to date with the latest Hugging Face methods.
 
 ## 🛡️ Environment & Security Notes
 - The session uses a securely generated `SECRET_KEY`.
